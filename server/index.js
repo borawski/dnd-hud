@@ -605,7 +605,7 @@ app.post('/api/update-player-stats/:playerId', (req, res) => {
 
 // Serve React app for all other routes (must be after API routes)
 if (process.env.NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
+    app.get(/.*/, (req, res) => {
         res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
 }
