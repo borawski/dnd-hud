@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dnd-dark: #0f172a;
+  --color-dnd-card: #1e293b;
+  --color-dnd-accent: #c85a54;
+  --color-dnd-text: #f8fafc;
+  --color-dnd-muted: #94a3b8;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Cinzel', serif;
+}
+
+@layer base {
+  body {
+    @apply bg-dnd-dark text-dnd-text font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+}
+
+@layer utilities {
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(200, 90, 84, 0.5);
+    }
+
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px 5px rgba(200, 90, 84, 0.3);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 0.6s ease-in-out;
+  }
+}
