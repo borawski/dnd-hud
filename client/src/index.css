@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-dnd-dark: #0f172a;
-  --color-dnd-card: #1e293b;
-  --color-dnd-accent: #c85a54;
-  --color-dnd-text: #f8fafc;
-  --color-dnd-muted: #94a3b8;
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Cinzel', serif;
+  /* Professional color palette matching Rollbound logo */
+  --color-dnd-dark: #0a0e1a;
+  --color-dnd-card: #141824;
+  --color-dnd-accent: #d45f54;
+  --color-dnd-accent-hover: #e06f64;
+  --color-dnd-text: #ffffff;
+  --color-dnd-muted: #9ca3af;
+  --color-dnd-border: #1f2937;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Cinzel', Georgia, serif;
 }
 
 @layer base {

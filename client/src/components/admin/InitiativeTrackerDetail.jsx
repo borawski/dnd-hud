@@ -123,15 +123,8 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
     // Handle sync toggle for D&D Beyond players
     const handleSyncToggle = async (enabled) => {
         try {
-            const response = await fetch(`${API_URL}/api/update-player-sync/${combatant.id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ syncEnabled: enabled })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update sync setting');
-            }
+            // Update via parent's onUpdate callback
+            onUpdate(combatant.id, 'syncEnabled', enabled);
         } catch (err) {
             console.error('Error updating sync:', err);
             alert('Failed to update sync setting');

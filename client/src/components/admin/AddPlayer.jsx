@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus, Minus } from 'lucide-react';
 import { API_URL } from '../../config';
+import { useGame } from '../../context/GameContext';
+import { useAuth } from '../../context/AuthContext';
 
 const AddPlayer = () => {
+    const { gameState, updateState, campaignId } = useGame();
+    const { token } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [importMode, setImportMode] = useState('dndbeyond'); // 'dndbeyond' or 'manual'
 
@@ -33,16 +37,36 @@ const AddPlayer = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/create-manual-player`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(manualPlayer)
-            });
+            // Calculate derived stats
+            const getMod = (score) => Math.floor((score - 10) / 2);
+            const profBonus = Math.ceil(1 + (manualPlayer.level || 1) / 4);
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create player');
-            }
+            const newCharacter = {
+                id: `player-manual-${Date.now()}`,
+                name: manualPlayer.name,
+                initiative: 0,
+                type: 'player',
+                hp: manualPlayer.hp,
+                maxHp: manualPlayer.maxHp,
+                ac: manualPlayer.ac,
+                stats: manualPlayer.stats,
+                level: manualPlayer.level || 1,
+                proficiencyBonus: profBonus,
+                passivePerception: 10 + getMod(manualPlayer.stats.wis),
+                actions: [],
+                equipment: [],
+                has_acted: false,
+                importMode: 'manual',
+                dndbeyondId: null,
+                syncEnabled: false
+            };
+
+            // Add to current game state
+            const newOrder = [...gameState.initiative_order, newCharacter];
+            await updateState({
+                initiative_order: newOrder,
+                log: [...gameState.log, `${new Date().toLocaleTimeString()} - Added ${manualPlayer.name} to initiative.`]
+            });
 
             // Reset form
             setManualPlayer({
@@ -120,9 +144,13 @@ const AddPlayer = () => {
                                             e.target.value = 'Importing...';
                                             e.target.disabled = true;
                                             try {
-                                                const response = await fetch(`${API_URL}/api/import-character`, {
+                                                // Use campaign-aware import endpoint
+                                                const response = await fetch(`${API_URL}/api/encounters/${campaignId}/import-character`, {
                                                     method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
                                                     body: JSON.stringify({ characterId })
                                                 });
 
@@ -130,6 +158,16 @@ const AddPlayer = () => {
                                                     const errorData = await response.json();
                                                     throw new Error(errorData.error || 'Failed to import');
                                                 }
+
+                                                const data = await response.json();
+                                                const newCharacter = data.character;
+
+                                                // Add to game state
+                                                const newOrder = [...gameState.initiative_order, newCharacter];
+                                                await updateState({
+                                                    initiative_order: newOrder,
+                                                    log: [...gameState.log, `${new Date().toLocaleTimeString()} - Imported ${newCharacter.name} from D&D Beyond.`]
+                                                });
 
                                                 e.target.value = '';
                                             } catch (err) {
