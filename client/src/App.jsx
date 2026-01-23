@@ -24,14 +24,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// Wrapper component that provides GameProvider to routes with encounterId param
-function GameProviderWrapper() {
-  return (
-    <GameProvider>
-      <Outlet />
-    </GameProvider>
-  );
-}
+
 
 function App() {
   return (
@@ -57,24 +50,31 @@ function App() {
             />
 
             {/* Routes with GameProvider wrapper (encounter-aware routes) */}
-            <Route element={<GameProviderWrapper />}>
-              {/* DM Admin View for specific encounter (protected) */}
-              <Route
-                path="/dm/:encounterId"
-                element={
-                  <ProtectedRoute>
+            {/* DM Admin View for specific encounter (protected) */}
+            <Route
+              path="/dm/:encounterId"
+              element={
+                <ProtectedRoute>
+                  <GameProvider>
                     <AdminView />
-                  </ProtectedRoute>
-                }
-              />
+                  </GameProvider>
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Public Player View (no auth required) */}
-              <Route path="/play/:encounterId" element={<PlayerView />} />
+            {/* Public Player View (no auth required) */}
+            <Route
+              path="/play/:encounterId"
+              element={
+                <GameProvider>
+                  <PlayerView />
+                </GameProvider>
+              }
+            />
 
-              {/* Legacy routes - redirect to dashboard */}
-              <Route path="/admin" element={<Navigate to="/dm/dashboard" replace />} />
-              <Route path="/player" element={<Navigate to="/dm/dashboard" replace />} />
-            </Route>
+            {/* Legacy routes - redirect to dashboard */}
+            <Route path="/admin" element={<Navigate to="/dm/dashboard" replace />} />
+            <Route path="/player" element={<Navigate to="/dm/dashboard" replace />} />
           </Routes>
         </div>
       </Router>

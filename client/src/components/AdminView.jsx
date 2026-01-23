@@ -15,7 +15,7 @@ const AdminView = () => {
 
     const handleBackToDashboard = () => {
         navigate('/dm/dashboard');
-    }; plea
+    };
 
     const handleLogout = () => {
         logout();

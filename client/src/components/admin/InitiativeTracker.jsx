@@ -238,8 +238,8 @@ const InitiativeTracker = ({ gameState, updateState }) => {
     return (
         <div className="flex-1 flex flex-col bg-dnd-card rounded-xl border border-dnd-muted/20 overflow-hidden">
             <div className="p-3 border-b border-dnd-muted/20 bg-dnd-dark/30">
-                <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
                         <h2 className="text-lg font-serif flex items-center gap-2">
                             <Sword size={18} className="text-dnd-accent" />
                             Initiative
@@ -249,15 +249,15 @@ const InitiativeTracker = ({ gameState, updateState }) => {
                             Round {gameState.current_round || 1}
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-end sm:justify-start">
                         <button
                             onClick={nextTurn}
                             disabled={isProcessing}
-                            className={`flex items-center gap-2 px-3 py-1.5 bg-dnd-accent text-white rounded transition-colors text-sm ${isProcessing ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:bg-red-700'}`}
+                            className={`flex items-center gap-2 px-2 py-1 bg-dnd-accent text-white rounded transition-colors text-xs font-bold ${isProcessing ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:bg-red-700'}`}
                         >
-                            <Play size={14} /> {combatStarted ? 'Next' : 'Begin Combat'}
+                            <Play size={12} /> {combatStarted ? 'Next' : 'Begin Combat'}
                         </button>
-                        <button onClick={() => updateState({ initiative_order: [], current_turn_index: 0, current_round: 1, combat_started: false })} className="p-1.5 text-dnd-muted hover:text-red-400">
+                        <button onClick={() => updateState({ initiative_order: [], current_turn_index: 0, current_round: 1, combat_started: false })} className="p-1 text-dnd-muted hover:text-red-400">
                             <RotateCcw size={14} />
                         </button>
                     </div>
