@@ -123,15 +123,8 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
     // Handle sync toggle for D&D Beyond players
     const handleSyncToggle = async (enabled) => {
         try {
-            const response = await fetch(`${API_URL}/api/update-player-sync/${combatant.id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ syncEnabled: enabled })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update sync setting');
-            }
+            // Update via parent's onUpdate callback
+            onUpdate(combatant.id, 'syncEnabled', enabled);
         } catch (err) {
             console.error('Error updating sync:', err);
             alert('Failed to update sync setting');
@@ -226,7 +219,7 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
             {/* Collapsed Row */}
             <div className="flex items-center gap-2 p-2 text-sm cursor-pointer hover:bg-dnd-dark/30" onClick={onToggle}>
                 {/* Position Number */}
-                <div className="w-6 text-center font-mono font-bold text-dnd-muted/50 text-xs">
+                <div className="hidden sm:block w-6 text-center font-mono font-bold text-dnd-muted/50 text-xs">
                     {position}
                 </div>
 
@@ -245,14 +238,14 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
                             #{combatant.monsterNumber}
                         </span>
                     )}
-                    <div className="text-xs text-dnd-muted">AC {combatant.ac}</div>
+                    <div className="text-xs text-dnd-muted whitespace-nowrap">AC {combatant.ac}</div>
                 </div>
 
                 <div className="flex items-center gap-1">
                     {/* Currently Attacking Badge - only show when combat has started */}
                     {isCurrentTurn && combatStarted && (
                         <>
-                            <div className="px-2 py-1 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                            <div className="hidden sm:block px-2 py-1 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
                                 Active
                             </div>
                             <div className="px-2 py-1 rounded text-xs font-mono font-bold bg-slate-700/50 text-slate-300 border border-slate-600/50">

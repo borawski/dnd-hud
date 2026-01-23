@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus, Minus } from 'lucide-react';
 import { API_URL } from '../../config';
+import { useGame } from '../../context/GameContext';
+import { useAuth } from '../../context/AuthContext';
 
 const AddPlayer = () => {
+    const { gameState, updateState, encounterId } = useGame();
+    const { token } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [importMode, setImportMode] = useState('dndbeyond'); // 'dndbeyond' or 'manual'
 
@@ -33,16 +37,36 @@ const AddPlayer = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/create-manual-player`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(manualPlayer)
-            });
+            // Calculate derived stats
+            const getMod = (score) => Math.floor((score - 10) / 2);
+            const profBonus = Math.ceil(1 + (manualPlayer.level || 1) / 4);
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create player');
-            }
+            const newCharacter = {
+                id: `player-manual-${Date.now()}`,
+                name: manualPlayer.name,
+                initiative: 0,
+                type: 'player',
+                hp: manualPlayer.hp,
+                maxHp: manualPlayer.maxHp,
+                ac: manualPlayer.ac,
+                stats: manualPlayer.stats,
+                level: manualPlayer.level || 1,
+                proficiencyBonus: profBonus,
+                passivePerception: 10 + getMod(manualPlayer.stats.wis),
+                actions: [],
+                equipment: [],
+                has_acted: false,
+                importMode: 'manual',
+                dndbeyondId: null,
+                syncEnabled: false
+            };
+
+            // Add to current game state
+            const newOrder = [...gameState.initiative_order, newCharacter];
+            await updateState({
+                initiative_order: newOrder,
+                log: [...gameState.log, `${new Date().toLocaleTimeString()} - Added ${manualPlayer.name} to initiative.`]
+            });
 
             // Reset form
             setManualPlayer({
@@ -120,9 +144,13 @@ const AddPlayer = () => {
                                             e.target.value = 'Importing...';
                                             e.target.disabled = true;
                                             try {
-                                                const response = await fetch(`${API_URL}/api/import-character`, {
+                                                // Use encounter-aware import endpoint
+                                                const response = await fetch(`${API_URL}/api/encounters/${encounterId}/import-character`, {
                                                     method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
                                                     body: JSON.stringify({ characterId })
                                                 });
 
@@ -130,6 +158,16 @@ const AddPlayer = () => {
                                                     const errorData = await response.json();
                                                     throw new Error(errorData.error || 'Failed to import');
                                                 }
+
+                                                const data = await response.json();
+                                                const newCharacter = data.character;
+
+                                                // Add to game state
+                                                const newOrder = [...gameState.initiative_order, newCharacter];
+                                                await updateState({
+                                                    initiative_order: newOrder,
+                                                    log: [...gameState.log, `${new Date().toLocaleTimeString()} - Imported ${newCharacter.name} from D&D Beyond.`]
+                                                });
 
                                                 e.target.value = '';
                                             } catch (err) {
@@ -167,8 +205,8 @@ const AddPlayer = () => {
                                     {['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => {
                                         const mod = getModifier(manualPlayer.stats[stat]);
                                         return (
-                                            <div key={stat} className="flex items-center justify-between bg-dnd-dark/50 rounded p-2">
-                                                <span className="text-xs uppercase font-medium text-dnd-accent">{stat}</span>
+                                            <div key={stat} className="flex flex-col items-center justify-center bg-dnd-dark/50 rounded p-2">
+                                                <span className="text-xs uppercase font-medium text-dnd-accent mb-1">{stat}</span>
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => adjustStat(stat, -1)}
@@ -176,23 +214,20 @@ const AddPlayer = () => {
                                                     >
                                                         <Minus size={12} className="text-red-400" />
                                                     </button>
-                                                    <div className="flex flex-col items-center justify-center min-w-[40px]">
-                                                        <input
-                                                            type="number"
-                                                            value={manualPlayer.stats[stat]}
-                                                            onChange={(e) => {
-                                                                const val = parseInt(e.target.value);
-                                                                if (!isNaN(val)) {
-                                                                    setManualPlayer(prev => ({
-                                                                        ...prev,
-                                                                        stats: { ...prev.stats, [stat]: Math.max(1, Math.min(20, val)) }
-                                                                    }));
-                                                                }
-                                                            }}
-                                                            className="w-12 bg-dnd-dark border border-dnd-muted/30 rounded px-1 text-center text-sm font-mono"
-                                                        />
-                                                        <span className="text-[10px] text-dnd-accent mt-0.5">{formatModifier(mod)}</span>
-                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={manualPlayer.stats[stat]}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value);
+                                                            if (!isNaN(val)) {
+                                                                setManualPlayer(prev => ({
+                                                                    ...prev,
+                                                                    stats: { ...prev.stats, [stat]: Math.max(1, Math.min(20, val)) }
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-12 bg-dnd-dark border border-dnd-muted/30 rounded px-1 text-center text-sm font-mono h-6"
+                                                    />
                                                     <button
                                                         onClick={() => adjustStat(stat, 1)}
                                                         className="w-6 h-6 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded flex items-center justify-center transition-all active:scale-90"
@@ -200,6 +235,7 @@ const AddPlayer = () => {
                                                         <Plus size={12} className="text-green-400" />
                                                     </button>
                                                 </div>
+                                                <span className="text-[10px] text-dnd-accent mt-1">{formatModifier(mod)}</span>
                                             </div>
                                         );
                                     })}

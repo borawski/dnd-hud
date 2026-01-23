@@ -50,24 +50,24 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
     console.log(`Client connected (DM: ${socket.isDM})`);
 
-    socket.on('join_encounter', (encounterId) => {
-        // Verify encounter exists
-        const encounter = db.prepare('SELECT * FROM encounters WHERE id = ?').get(encounterId);
+    socket.on('join_campaign', (campaignId) => {
+        // Verify campaign exists
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
 
-        if (!encounter) {
-            return socket.emit('error', 'encounter not found');
+        if (!campaign) {
+            return socket.emit('error', 'Campaign not found');
         }
 
         // If DM, verify ownership
-        if (socket.isDM && encounter.dm_user_id !== socket.user.id) {
-            return socket.emit('error', 'Not your encounter');
+        if (socket.isDM && campaign.dm_user_id !== socket.user.id) {
+            return socket.emit('error', 'Not your campaign');
         }
 
-        socket.join(`encounter:${encounterId}`);
-        socket.encounterId = encounterId;
-        console.log(`${socket.isDM ? 'DM' : 'Player'} joined encounter ${encounterId}`);
+        socket.join(`campaign:${campaignId}`);
+        socket.campaignId = campaignId;
+        console.log(`${socket.isDM ? 'DM' : 'Player'} joined campaign ${campaignId}`);
 
-        socket.emit('joined_encounter', { encounterId, isDM: socket.isDM });
+        socket.emit('joined_campaign', { campaignId, isDM: socket.isDM });
     });
 
     // Only DMs can emit state updates
@@ -76,11 +76,11 @@ io.on('connection', (socket) => {
             return socket.emit('error', 'Players cannot update state');
         }
 
-        if (!socket.encounterId) {
-            return socket.emit('error', 'Not in a encounter');
+        if (!socket.campaignId) {
+            return socket.emit('error', 'Not in a campaign');
         }
 
-        io.to(`encounter:${socket.encounterId}`).emit('state_update', data);
+        io.to(`campaign:${socket.campaignId}`).emit('state_update', data);
     });
 
     socket.on('disconnect', () => {
@@ -89,7 +89,7 @@ io.on('connection', (socket) => {
 });
 
 // Import authentication utilities
-const { hashPassword, verifyPassword, generateToken, verifyToken, authenticateToken, generateEncounterId } = require('./auth');
+const { hashPassword, verifyPassword, generateToken, verifyToken, authenticateToken, generateCampaignId } = require('./auth');
 
 // ============================================
 // DM AUTHENTICATION ENDPOINTS
@@ -164,69 +164,69 @@ app.post('/api/dm/login', (req, res) => {
     }
 });
 
-// Get DM's encounters
-app.get('/api/dm/encounters', authenticateToken, (req, res) => {
+// Get DM's campaigns
+app.get('/api/dm/campaigns', authenticateToken, (req, res) => {
     try {
-        const encounters = db.prepare(`
-            SELECT * FROM encounters WHERE dm_user_id = ? ORDER BY last_active_at DESC
+        const campaigns = db.prepare(`
+            SELECT * FROM campaigns WHERE dm_user_id = ? ORDER BY last_active_at DESC
         `).all(req.user.id);
 
-        res.json(encounters);
+        res.json(campaigns);
     } catch (err) {
-        console.error('Error fetching encounters:', err);
-        res.status(500).json({ error: 'Failed to fetch encounters' });
+        console.error('Error fetching campaigns:', err);
+        res.status(500).json({ error: 'Failed to fetch campaigns' });
     }
 });
 
-// Create new encounter
-app.post('/api/dm/encounters', authenticateToken, (req, res) => {
+// Create new campaign
+app.post('/api/dm/campaigns', authenticateToken, (req, res) => {
     try {
         const { name } = req.body;
 
         if (!name) {
-            return res.status(400).json({ error: 'encounter name is required' });
+            return res.status(400).json({ error: 'Campaign name is required' });
         }
 
-        const encounterId = generateEncounterId();
+        const campaignId = generateCampaignId();
         const now = new Date().toISOString();
 
         db.prepare(`
-            INSERT INTO encounters (id, name, dm_user_id, last_active_at)
+            INSERT INTO campaigns (id, name, dm_user_id, last_active_at)
             VALUES (?, ?, ?, ?)
-        `).run(encounterId, name, req.user.id, now);
+        `).run(campaignId, name, req.user.id, now);
 
-        // Create empty game state for this encounter
+        // Create empty game state for this campaign
         db.prepare(`
-            INSERT INTO game_state (encounter_id, active_map, initiative_order, current_turn_index, current_round, combat_started, turn_start_time, log)
+            INSERT INTO game_state (campaign_id, active_map, initiative_order, current_turn_index, current_round, combat_started, turn_start_time, log)
             VALUES (?, '', '[]', 0, 1, 0, NULL, '[]')
-        `).run(encounterId);
+        `).run(campaignId);
 
-        const encounter = db.prepare('SELECT * FROM encounters WHERE id = ?').get(encounterId);
-        res.json(encounter);
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+        res.json(campaign);
     } catch (err) {
-        console.error('Error creating encounter:', err);
-        res.status(500).json({ error: 'Failed to create encounter' });
+        console.error('Error creating campaign:', err);
+        res.status(500).json({ error: 'Failed to create campaign' });
     }
 });
 
-// Delete encounter
-app.delete('/api/dm/encounters/:encounterId', authenticateToken, (req, res) => {
+// Delete campaign
+app.delete('/api/dm/campaigns/:campaignId', authenticateToken, (req, res) => {
     try {
-        const { encounterId } = req.params;
+        const { campaignId } = req.params;
 
         // Verify ownership
-        const encounter = db.prepare('SELECT * FROM encounters WHERE id = ? AND dm_user_id = ?').get(encounterId, req.user.id);
-        if (!encounter) {
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ? AND dm_user_id = ?').get(campaignId, req.user.id);
+        if (!campaign) {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        db.prepare('DELETE FROM encounters WHERE id = ?').run(encounterId);
-        db.prepare('DELETE FROM game_state WHERE encounter_id = ?').run(encounterId);
+        db.prepare('DELETE FROM campaigns WHERE id = ?').run(campaignId);
+        db.prepare('DELETE FROM game_state WHERE campaign_id = ?').run(campaignId);
 
         res.json({ success: true });
     } catch (err) {
-        console.error('Error deleting encounter:', err);
-        res.status(500).json({ error: 'Failed to delete encounter' });
+        console.error('Error deleting campaign:', err);
+        res.status(500).json({ error: 'Failed to delete campaign' });
     }
 });
 
@@ -234,18 +234,18 @@ app.delete('/api/dm/encounters/:encounterId', authenticateToken, (req, res) => {
 // MULTI-TENANT GAME STATE ENDPOINTS
 // ============================================
 
-// Get encounter game state (PUBLIC - no auth required for player view)
-app.get('/api/encounters/:encounterId/gamestate', (req, res) => {
+// Get campaign game state (PUBLIC - no auth required for player view)
+app.get('/api/campaigns/:campaignId/gamestate', (req, res) => {
     try {
-        const { encounterId } = req.params;
+        const { campaignId } = req.params;
 
-        // Verify encounter exists
-        const encounter = db.prepare('SELECT id FROM encounters WHERE id = ?').get(encounterId);
-        if (!encounter) {
-            return res.status(404).json({ error: 'encounter not found' });
+        // Verify campaign exists
+        const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(campaignId);
+        if (!campaign) {
+            return res.status(404).json({ error: 'Campaign not found' });
         }
 
-        const state = db.prepare('SELECT * FROM game_state WHERE encounter_id = ?').get(encounterId);
+        const state = db.prepare('SELECT * FROM game_state WHERE campaign_id = ?').get(campaignId);
         if (!state) {
             return res.status(404).json({ error: 'Game state not found' });
         }
@@ -260,14 +260,14 @@ app.get('/api/encounters/:encounterId/gamestate', (req, res) => {
     }
 });
 
-// Update encounter game state (DM only - requires authentication)
-app.post('/api/encounters/:encounterId/gamestate', authenticateToken, (req, res) => {
+// Update campaign game state (DM only - requires authentication)
+app.post('/api/campaigns/:campaignId/gamestate', authenticateToken, (req, res) => {
     try {
-        const { encounterId } = req.params;
+        const { campaignId } = req.params;
 
-        // Verify DM owns this encounter
-        const encounter = db.prepare('SELECT * FROM encounters WHERE id = ? AND dm_user_id = ?').get(encounterId, req.user.id);
-        if (!encounter) {
+        // Verify DM owns this campaign
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ? AND dm_user_id = ?').get(campaignId, req.user.id);
+        if (!campaign) {
             return res.status(403).json({ error: 'Access denied' });
         }
 
@@ -282,7 +282,7 @@ app.post('/api/encounters/:encounterId/gamestate', authenticateToken, (req, res)
                 combat_started = COALESCE(?, combat_started),
                 turn_start_time = COALESCE(?, turn_start_time),
                 log = COALESCE(?, log)
-            WHERE encounter_id = ?
+            WHERE campaign_id = ?
         `);
 
         stmt.run(
@@ -293,18 +293,18 @@ app.post('/api/encounters/:encounterId/gamestate', authenticateToken, (req, res)
             combat_started !== undefined ? (combat_started ? 1 : 0) : null,
             turn_start_time,
             log ? JSON.stringify(log) : null,
-            encounterId
+            campaignId
         );
 
-        // Update encounter last_active_at
-        db.prepare('UPDATE encounters SET last_active_at = ? WHERE id = ?').run(new Date().toISOString(), encounterId);
+        // Update campaign last_active_at
+        db.prepare('UPDATE campaigns SET last_active_at = ? WHERE id = ?').run(new Date().toISOString(), campaignId);
 
-        const newState = db.prepare('SELECT * FROM game_state WHERE encounter_id = ?').get(encounterId);
+        const newState = db.prepare('SELECT * FROM game_state WHERE campaign_id = ?').get(campaignId);
         newState.initiative_order = JSON.parse(newState.initiative_order);
         newState.log = JSON.parse(newState.log);
         newState.combat_started = Boolean(newState.combat_started);
 
-        io.to(`encounter:${encounterId}`).emit('state_update', newState);
+        io.to(`campaign:${campaignId}`).emit('state_update', newState);
         res.json(newState);
     } catch (err) {
         console.error('Error updating game state:', err);
@@ -312,15 +312,15 @@ app.post('/api/encounters/:encounterId/gamestate', authenticateToken, (req, res)
     }
 });
 
-// Import character to specific encounter (DM only)
-app.post('/api/encounters/:encounterId/import-character', authenticateToken, async (req, res) => {
+// Import character to specific campaign (DM only)
+app.post('/api/campaigns/:campaignId/import-character', authenticateToken, async (req, res) => {
     try {
-        const { encounterId } = req.params;
+        const { campaignId } = req.params;
         const { characterId } = req.body;
 
-        // Verify DM owns this encounter
-        const encounter = db.prepare('SELECT * FROM encounters WHERE id = ? AND dm_user_id = ?').get(encounterId, req.user.id);
-        if (!encounter) {
+        // Verify DM owns this campaign
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ? AND dm_user_id = ?').get(campaignId, req.user.id);
+        if (!campaign) {
             return res.status(403).json({ error: 'Access denied' });
         }
 
@@ -976,4 +976,3 @@ if (process.env.NODE_ENV === 'production') {
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
-
