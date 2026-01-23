@@ -8,6 +8,8 @@ const InitiativeTracker = ({ gameState, updateState }) => {
     const [roundChanged, setRoundChanged] = React.useState(false);
     const prevRoundRef = React.useRef(gameState.current_round);
 
+    const [isProcessing, setIsProcessing] = React.useState(false);
+
     // Detect round changes and trigger animation
     React.useEffect(() => {
         if (prevRoundRef.current !== gameState.current_round) {
@@ -56,103 +58,108 @@ const InitiativeTracker = ({ gameState, updateState }) => {
     const combatStarted = gameState.combat_started;
 
     const nextTurn = async () => {
-        if (gameState.initiative_order.length === 0) return;
+        if (gameState.initiative_order.length === 0 || isProcessing) return;
 
-        // Check if this is the first turn (Begin Combat)
-        if (!combatStarted) {
-            // First time clicking "Begin Combat" - just mark combat as started
-            const turnStartTime = new Date().toISOString();
-            const firstCombatant = sortedOrder[0];
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = `${timestamp} - Combat started! ${firstCombatant.name}'s turn`;
+        setIsProcessing(true);
+        try {
+            // Check if this is the first turn (Begin Combat)
+            if (!combatStarted) {
+                // First time clicking "Begin Combat" - just mark combat as started
+                const turnStartTime = new Date().toISOString();
+                const firstCombatant = sortedOrder[0];
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = `${timestamp} - Combat started! ${firstCombatant.name}'s turn`;
 
-            console.log('Setting turn_start_time on combat start:', turnStartTime);
+                console.log('Setting turn_start_time on combat start:', turnStartTime);
 
-            // Sync first combatant if they have sync enabled
-            if (firstCombatant.type === 'player' && firstCombatant.syncEnabled && firstCombatant.importMode === 'dndbeyond') {
+                // Sync first combatant if they have sync enabled
+                if (firstCombatant.type === 'player' && firstCombatant.syncEnabled && firstCombatant.importMode === 'dndbeyond') {
+                    try {
+                        await fetch(`${API_URL}/api/sync-player/${firstCombatant.id}`, {
+                            method: 'POST'
+                        });
+                        console.log(`Synced ${firstCombatant.name} from D&D Beyond`);
+                    } catch (err) {
+                        console.error('Failed to sync player:', err);
+                    }
+                }
+
+                await updateState({
+                    combat_started: true,
+                    turn_start_time: turnStartTime,
+                    log: [...(gameState.log || []), logEntry]
+                    // Keep current_turn_index at 0
+                });
+                return;
+            }
+
+            // Normal turn progression (after combat has started)
+            const currentCombatant = sortedOrder[gameState.current_turn_index];
+            const currentTime = new Date();
+            const timestamp = currentTime.toLocaleTimeString();
+
+            // Calculate turn duration if we have a start time
+            let turnEndLog = '';
+            if (gameState.turn_start_time && currentCombatant) {
+                const duration = Math.floor((currentTime - new Date(gameState.turn_start_time)) / 1000);
+                turnEndLog = `${timestamp} - ${currentCombatant.name}'s turn ended (${duration}s)`;
+            }
+
+            // Mark current combatant as done, THEN move to next
+            const updatedOrder = gameState.initiative_order.map((c, idx) => {
+                if (idx === gameState.current_turn_index) {
+                    return { ...c, has_acted: true };
+                }
+                return c;
+            });
+
+            const nextIndex = (gameState.current_turn_index + 1) % gameState.initiative_order.length;
+            const newTurnStartTime = new Date().toISOString();
+            const nextCombatant = sortedOrder[nextIndex];
+
+            // Build log entries
+            const newLogEntries = [...(gameState.log || [])];
+            if (turnEndLog) newLogEntries.push(turnEndLog);
+
+            // Check if we're starting a new round
+            if (nextIndex === 0) {
+                const newRound = (gameState.current_round || 1) + 1;
+                newLogEntries.push(`${timestamp} - Round ${newRound} begins!`);
+            }
+
+            newLogEntries.push(`${timestamp} - ${nextCombatant.name}'s turn started`);
+
+            // Sync next combatant if they have sync enabled
+            if (nextCombatant.type === 'player' && nextCombatant.syncEnabled && nextCombatant.importMode === 'dndbeyond') {
                 try {
-                    await fetch(`${API_URL}/api/sync-player/${firstCombatant.id}`, {
+                    await fetch(`${API_URL}/api/sync-player/${nextCombatant.id}`, {
                         method: 'POST'
                     });
-                    console.log(`Synced ${firstCombatant.name} from D&D Beyond`);
+                    console.log(`Synced ${nextCombatant.name} from D&D Beyond`);
+                    newLogEntries.push(`${timestamp} - ${nextCombatant.name} synced from D&D Beyond`);
                 } catch (err) {
                     console.error('Failed to sync player:', err);
                 }
             }
 
-            updateState({
-                combat_started: true,
-                turn_start_time: turnStartTime,
-                log: [...(gameState.log || []), logEntry]
-                // Keep current_turn_index at 0
-            });
-            return;
-        }
+            // If we're cycling back to the first combatant, increment round and reset all has_acted flags
+            const updates = {
+                current_turn_index: nextIndex,
+                turn_start_time: newTurnStartTime,
+                log: newLogEntries,
+                initiative_order: nextIndex === 0
+                    ? updatedOrder.map(c => ({ ...c, has_acted: false }))
+                    : updatedOrder
+            };
 
-        // Normal turn progression (after combat has started)
-        const currentCombatant = sortedOrder[gameState.current_turn_index];
-        const currentTime = new Date();
-        const timestamp = currentTime.toLocaleTimeString();
-
-        // Calculate turn duration if we have a start time
-        let turnEndLog = '';
-        if (gameState.turn_start_time && currentCombatant) {
-            const duration = Math.floor((currentTime - new Date(gameState.turn_start_time)) / 1000);
-            turnEndLog = `${timestamp} - ${currentCombatant.name}'s turn ended (${duration}s)`;
-        }
-
-        // Mark current combatant as done, THEN move to next
-        const updatedOrder = gameState.initiative_order.map((c, idx) => {
-            if (idx === gameState.current_turn_index) {
-                return { ...c, has_acted: true };
+            if (nextIndex === 0) {
+                updates.current_round = (gameState.current_round || 1) + 1;
             }
-            return c;
-        });
 
-        const nextIndex = (gameState.current_turn_index + 1) % gameState.initiative_order.length;
-        const newTurnStartTime = new Date().toISOString();
-        const nextCombatant = sortedOrder[nextIndex];
-
-        // Build log entries
-        const newLogEntries = [...(gameState.log || [])];
-        if (turnEndLog) newLogEntries.push(turnEndLog);
-
-        // Check if we're starting a new round
-        if (nextIndex === 0) {
-            const newRound = (gameState.current_round || 1) + 1;
-            newLogEntries.push(`${timestamp} - Round ${newRound} begins!`);
+            await updateState(updates);
+        } finally {
+            setIsProcessing(false);
         }
-
-        newLogEntries.push(`${timestamp} - ${nextCombatant.name}'s turn started`);
-
-        // Sync next combatant if they have sync enabled
-        if (nextCombatant.type === 'player' && nextCombatant.syncEnabled && nextCombatant.importMode === 'dndbeyond') {
-            try {
-                await fetch(`${API_URL}/api/sync-player/${nextCombatant.id}`, {
-                    method: 'POST'
-                });
-                console.log(`Synced ${nextCombatant.name} from D&D Beyond`);
-                newLogEntries.push(`${timestamp} - ${nextCombatant.name} synced from D&D Beyond`);
-            } catch (err) {
-                console.error('Failed to sync player:', err);
-            }
-        }
-
-        // If we're cycling back to the first combatant, increment round and reset all has_acted flags
-        const updates = {
-            current_turn_index: nextIndex,
-            turn_start_time: newTurnStartTime,
-            log: newLogEntries,
-            initiative_order: nextIndex === 0
-                ? updatedOrder.map(c => ({ ...c, has_acted: false }))
-                : updatedOrder
-        };
-
-        if (nextIndex === 0) {
-            updates.current_round = (gameState.current_round || 1) + 1;
-        }
-
-        updateState(updates);
     };
 
     const updateCombatant = (id, field, value) => {
@@ -243,7 +250,11 @@ const InitiativeTracker = ({ gameState, updateState }) => {
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={nextTurn} className="flex items-center gap-2 px-3 py-1.5 bg-dnd-accent text-white rounded hover:bg-red-700 transition-colors text-sm">
+                        <button
+                            onClick={nextTurn}
+                            disabled={isProcessing}
+                            className={`flex items-center gap-2 px-3 py-1.5 bg-dnd-accent text-white rounded transition-colors text-sm ${isProcessing ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:bg-red-700'}`}
+                        >
                             <Play size={14} /> {combatStarted ? 'Next' : 'Begin Combat'}
                         </button>
                         <button onClick={() => updateState({ initiative_order: [], current_turn_index: 0, current_round: 1, combat_started: false })} className="p-1.5 text-dnd-muted hover:text-red-400">

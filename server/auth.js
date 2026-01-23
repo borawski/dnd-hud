@@ -101,9 +101,9 @@ function authenticateToken(req, res, next) {
 }
 
 /**
- * Generate random campaign ID (UUID-like)
+ * Generate random encounter ID (UUID-like)
  */
-function generateCampaignId() {
+function generateEncounterId() {
     return crypto.randomBytes(16).toString('hex');
 }
 
@@ -113,5 +113,5 @@ module.exports = {
     generateToken,
     verifyToken,
     authenticateToken,
-    generateCampaignId
+    generateEncounterId
 };

@@ -89,7 +89,7 @@ io.on('connection', (socket) => {
 });
 
 // Import authentication utilities
-const { hashPassword, verifyPassword, generateToken, verifyToken, authenticateToken, generateencounterId } = require('./auth');
+const { hashPassword, verifyPassword, generateToken, verifyToken, authenticateToken, generateEncounterId } = require('./auth');
 
 // ============================================
 // DM AUTHENTICATION ENDPOINTS
@@ -187,7 +187,7 @@ app.post('/api/dm/encounters', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'encounter name is required' });
         }
 
-        const encounterId = generateencounterId();
+        const encounterId = generateEncounterId();
         const now = new Date().toISOString();
 
         db.prepare(`

@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext';
 const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
-    const { campaignId } = useParams(); // Get campaign ID from URL
+    const { encounterId } = useParams(); // Get encounter ID from URL
     const location = useLocation();
     const { token } = useAuth();
 
@@ -61,29 +61,29 @@ export const GameProvider = ({ children }) => {
         };
     }, [token, isDM]);
 
-    // Join campaign room when campaignId changes
+    // Join encounter room when encounterId changes
     useEffect(() => {
-        if (socket && campaignId && isConnected) {
-            console.log(`Joining campaign: ${campaignId}`);
-            socket.emit('join_encounter', campaignId);
+        if (socket && encounterId && isConnected) {
+            console.log(`Joining encounter: ${encounterId}`);
+            socket.emit('join_encounter', encounterId);
         }
-    }, [socket, campaignId, isConnected]);
+    }, [socket, encounterId, isConnected]);
 
-    // Fetch initial state when campaign ID is available
+    // Fetch initial state when encounter ID is available
     useEffect(() => {
-        if (!campaignId) {
-            // No campaign ID in URL - might be on landing page or dashboard
+        if (!encounterId) {
+            // No encounter ID in URL - might be on landing page or dashboard
             return;
         }
 
         const fetchInitialState = async () => {
             try {
                 // Public endpoint - no auth required
-                const response = await fetch(`${API_URL}/api/encounters/${campaignId}/gamestate`);
+                const response = await fetch(`${API_URL}/api/encounters/${encounterId}/gamestate`);
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        console.error('Campaign not found');
+                        console.error('Encounter not found');
                         return;
                     }
                     throw new Error(`HTTP ${response.status}`);
@@ -91,19 +91,19 @@ export const GameProvider = ({ children }) => {
 
                 const data = await response.json();
                 if (data) {
-                    console.log('Loaded campaign state:', data);
+                    console.log('Loaded encounter state:', data);
                     setGameState({
                         ...data,
                         combat_started: data.combat_started ?? false
                     });
                 }
             } catch (err) {
-                console.error('Failed to fetch campaign state:', err);
+                console.error('Failed to fetch encounter state:', err);
             }
         };
 
         fetchInitialState();
-    }, [campaignId]);
+    }, [encounterId]);
 
     // Listen for state updates via Socket.IO
     useEffect(() => {
@@ -131,8 +131,8 @@ export const GameProvider = ({ children }) => {
             return;
         }
 
-        if (!campaignId) {
-            console.error('No campaign ID available');
+        if (!encounterId) {
+            console.error('No encounter ID available');
             return;
         }
 
@@ -140,7 +140,7 @@ export const GameProvider = ({ children }) => {
         setGameState(prev => ({ ...prev, ...updates }));
 
         try {
-            const response = await fetch(`${API_URL}/api/encounters/${campaignId}/gamestate`, {
+            const response = await fetch(`${API_URL}/api/encounters/${encounterId}/gamestate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export const GameProvider = ({ children }) => {
         <GameContext.Provider value={{
             gameState,
             updateState,
-            campaignId,
+            encounterId,
             isDM,
             isConnected
         }}>

@@ -1,0 +1,63 @@
+import React from 'react';
+import { LogOut, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+/**
+ * Reusable Navbar component for Rollbound
+ * @param {Object} props
+ * @param {string} props.userName - Optional user display name
+ * @param {Function} props.onLogout - Optional logout handler
+ * @param {string} props.backLink - Optional back link URL
+ * @param {string} props.backText - Optional back link text
+ */
+export default function Navbar({ userName, onLogout, backLink, backText }) {
+    return (
+        <nav className="bg-dnd-card border-b border-dnd-border">
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+                <div className="flex items-center justify-between">
+                    {/* Left: Logo and Title */}
+                    <div className="flex items-center gap-1.5">
+                        <img
+                            src="/rollbound-logo.png"
+                            alt="Rollbound"
+                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain flex-shrink-0"
+                        />
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-dnd-text leading-tight">
+                                Rollbound
+                            </h1>
+                            {userName && (
+                                <p className="text-sm text-dnd-muted hidden sm:block">
+                                    Welcome back, <span className="text-dnd-accent font-medium">{userName}</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-3">
+                        {backLink && (
+                            <Link
+                                to={backLink}
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-dnd-muted hover:text-dnd-accent transition-colors"
+                            >
+                                <ArrowLeft size={18} />
+                                <span className="hidden sm:inline">{backText || 'Back'}</span>
+                            </Link>
+                        )}
+
+                        {onLogout && (
+                            <button
+                                onClick={onLogout}
+                                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-dnd-dark hover:bg-dnd-dark/70 border border-dnd-border rounded-lg transition-colors text-dnd-muted hover:text-red-400 text-sm"
+                            >
+                                <LogOut size={16} />
+                                <span className="hidden sm:inline font-medium">Logout</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </nav>
+    );
+}

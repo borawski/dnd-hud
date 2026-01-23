@@ -11,7 +11,7 @@ const Landing = () => {
                     <img
                         src="/rollbound-logo.png"
                         alt="Rollbound Logo"
-                        className="w-24 h-24 md:w-32 md:h-32 mb-6 drop-shadow-2xl"
+                        className="w-44 h-44 md:w-52 md:h-52 mb-6 drop-shadow-2xl object-contain"
                     />
                     <h1 className="text-5xl md:text-7xl font-serif font-bold text-dnd-text mb-4 tracking-tight">
                         Rollbound

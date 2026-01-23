@@ -5,7 +5,7 @@ import { useGame } from '../../context/GameContext';
 import { useAuth } from '../../context/AuthContext';
 
 const AddPlayer = () => {
-    const { gameState, updateState, campaignId } = useGame();
+    const { gameState, updateState, encounterId } = useGame();
     const { token } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [importMode, setImportMode] = useState('dndbeyond'); // 'dndbeyond' or 'manual'
@@ -144,8 +144,8 @@ const AddPlayer = () => {
                                             e.target.value = 'Importing...';
                                             e.target.disabled = true;
                                             try {
-                                                // Use campaign-aware import endpoint
-                                                const response = await fetch(`${API_URL}/api/encounters/${campaignId}/import-character`, {
+                                                // Use encounter-aware import endpoint
+                                                const response = await fetch(`${API_URL}/api/encounters/${encounterId}/import-character`, {
                                                     method: 'POST',
                                                     headers: {
                                                         'Content-Type': 'application/json',
@@ -205,8 +205,8 @@ const AddPlayer = () => {
                                     {['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => {
                                         const mod = getModifier(manualPlayer.stats[stat]);
                                         return (
-                                            <div key={stat} className="flex items-center justify-between bg-dnd-dark/50 rounded p-2">
-                                                <span className="text-xs uppercase font-medium text-dnd-accent">{stat}</span>
+                                            <div key={stat} className="flex flex-col items-center justify-center bg-dnd-dark/50 rounded p-2">
+                                                <span className="text-xs uppercase font-medium text-dnd-accent mb-1">{stat}</span>
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => adjustStat(stat, -1)}
@@ -214,23 +214,20 @@ const AddPlayer = () => {
                                                     >
                                                         <Minus size={12} className="text-red-400" />
                                                     </button>
-                                                    <div className="flex flex-col items-center justify-center min-w-[40px]">
-                                                        <input
-                                                            type="number"
-                                                            value={manualPlayer.stats[stat]}
-                                                            onChange={(e) => {
-                                                                const val = parseInt(e.target.value);
-                                                                if (!isNaN(val)) {
-                                                                    setManualPlayer(prev => ({
-                                                                        ...prev,
-                                                                        stats: { ...prev.stats, [stat]: Math.max(1, Math.min(20, val)) }
-                                                                    }));
-                                                                }
-                                                            }}
-                                                            className="w-12 bg-dnd-dark border border-dnd-muted/30 rounded px-1 text-center text-sm font-mono"
-                                                        />
-                                                        <span className="text-[10px] text-dnd-accent mt-0.5">{formatModifier(mod)}</span>
-                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={manualPlayer.stats[stat]}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value);
+                                                            if (!isNaN(val)) {
+                                                                setManualPlayer(prev => ({
+                                                                    ...prev,
+                                                                    stats: { ...prev.stats, [stat]: Math.max(1, Math.min(20, val)) }
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-12 bg-dnd-dark border border-dnd-muted/30 rounded px-1 text-center text-sm font-mono h-6"
+                                                    />
                                                     <button
                                                         onClick={() => adjustStat(stat, 1)}
                                                         className="w-6 h-6 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded flex items-center justify-center transition-all active:scale-90"
@@ -238,6 +235,7 @@ const AddPlayer = () => {
                                                         <Plus size={12} className="text-green-400" />
                                                     </button>
                                                 </div>
+                                                <span className="text-[10px] text-dnd-accent mt-1">{formatModifier(mod)}</span>
                                             </div>
                                         );
                                     })}

@@ -24,7 +24,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// Wrapper component that provides GameProvider to routes with campaignId param
+// Wrapper component that provides GameProvider to routes with encounterId param
 function GameProviderWrapper() {
   return (
     <GameProvider>
@@ -56,11 +56,11 @@ function App() {
               }
             />
 
-            {/* Routes with GameProvider wrapper (campaign-aware routes) */}
+            {/* Routes with GameProvider wrapper (encounter-aware routes) */}
             <Route element={<GameProviderWrapper />}>
-              {/* DM Admin View for specific campaign (protected) */}
+              {/* DM Admin View for specific encounter (protected) */}
               <Route
-                path="/dm/:campaignId"
+                path="/dm/:encounterId"
                 element={
                   <ProtectedRoute>
                     <AdminView />
@@ -69,7 +69,7 @@ function App() {
               />
 
               {/* Public Player View (no auth required) */}
-              <Route path="/play/:campaignId" element={<PlayerView />} />
+              <Route path="/play/:encounterId" element={<PlayerView />} />
 
               {/* Legacy routes - redirect to dashboard */}
               <Route path="/admin" element={<Navigate to="/dm/dashboard" replace />} />

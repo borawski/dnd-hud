@@ -10,12 +10,13 @@
   --color-dnd-muted: #9ca3af;
   --color-dnd-border: #1f2937;
   --font-sans: 'Inter', system-ui, sans-serif;
-  --font-serif: 'Cinzel', Georgia, serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
 }
 
 @layer base {
   body {
     @apply bg-dnd-dark text-dnd-text font-sans;
+    cursor: default;
   }
 
   h1,
@@ -25,6 +26,14 @@
   h5,
   h6 {
     @apply font-serif;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 }
 

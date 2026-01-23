@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, ArrowLeft } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 export default function DMLogin() {
     const [email, setEmail] = useState('');
@@ -34,15 +34,6 @@ export default function DMLogin() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dnd-dark via-dnd-card to-dnd-dark px-4 py-12">
             <div className="w-full max-w-md">
-                {/* Back Button */}
-                <Link
-                    to="/"
-                    className="inline-flex items-center gap-2 text-dnd-muted hover:text-dnd-accent transition-colors mb-8"
-                >
-                    <ArrowLeft size={20} />
-                    <span>Back to Home</span>
-                </Link>
-
                 {/* Card */}
                 <div className="bg-dnd-card border-2 border-dnd-border rounded-2xl p-8 shadow-2xl">
                     {/* Logo */}
@@ -50,7 +41,7 @@ export default function DMLogin() {
                         <img
                             src="/rollbound-logo.png"
                             alt="Rollbound"
-                            className="w-20 h-20"
+                            className="w-32 h-32 object-contain"
                         />
                     </div>
 
