@@ -270,7 +270,7 @@ const InitiativeTracker = ({ gameState, updateState }) => {
                         <button
                             onClick={nextTurn}
                             disabled={isProcessing}
-                            className={`flex items-center gap-2 px-2 py-1 bg-dnd-accent text-white rounded transition-colors text-xs font-bold ${isProcessing ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:bg-red-700'}`}
+                            className={`flex items-center gap-1 px-2 py-1 bg-dnd-accent text-white rounded transition-colors text-xs font-bold whitespace-nowrap ${isProcessing ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:bg-red-700'}`}
                         >
                             <Play size={12} /> {combatStarted ? 'Next' : 'Begin Combat'}
                         </button>
