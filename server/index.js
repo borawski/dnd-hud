@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { Server } = require('socket.io');
+const { OAuth2Client } = require('google-auth-library');
 const db = require('./db');
 const path = require('path');
 
@@ -128,6 +129,68 @@ app.post('/api/dm/signup', (req, res) => {
     } catch (err) {
         console.error('Signup error:', err);
         res.status(500).json({ error: 'Failed to create account' });
+    }
+});
+
+// DM Google Auth
+app.post('/api/dm/google-auth', async (req, res) => {
+    try {
+        const { credential, accessToken, clientId } = req.body;
+
+        let email, sub, name;
+
+        if (credential) {
+            // ID Token flow (Standard Google Button)
+            const client = new OAuth2Client(clientId);
+            const ticket = await client.verifyIdToken({
+                idToken: credential,
+                audience: clientId,
+            });
+            const payload = ticket.getPayload();
+            email = payload.email;
+            sub = payload.sub;
+            name = payload.name;
+        } else if (accessToken) {
+            // Access Token flow (Custom Button)
+            const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            email = response.data.email;
+            sub = response.data.sub;
+            name = response.data.name;
+        } else {
+            throw new Error('No credential or access token provided');
+        }
+
+        // Find user by google_id OR email
+        let user = db.prepare('SELECT * FROM dm_users WHERE google_id = ? OR email = ?').get(sub, email);
+
+        if (!user) {
+            // Create user
+            // Password hash: use a placeholder since it's NOT NULL
+            const result = db.prepare(`
+                INSERT INTO dm_users (email, password_hash, display_name, google_id)
+                VALUES (?, ?, ?, ?)
+            `).run(email, 'GOOGLE_AUTH_USER', name, sub);
+
+            user = { id: result.lastInsertRowid, email: email, display_name: name };
+        } else {
+            // Check if google_id is missing (migrating email user to google linked)
+            if (!user.google_id) {
+                db.prepare('UPDATE dm_users SET google_id = ? WHERE id = ?').run(sub, user.id);
+            }
+        }
+
+        // Generate token
+        const token = generateToken({ id: user.id, email: user.email });
+
+        res.json({
+            token,
+            user: { id: user.id, email: user.email, displayName: user.display_name }
+        });
+    } catch (err) {
+        console.error('Google auth error:', err);
+        res.status(401).json({ error: 'Google authentication failed' });
     }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, ChevronDown, ChevronRight, Trash2, Sword, Shield, Zap, X, Scroll } from 'lucide-react';
+import { Plus, Minus, ChevronDown, ChevronRight, Trash2, Sword, Shield, Zap, X, Scroll, Dice5 } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStartTime, isExpanded, onToggle, onUpdate, onRemove, combatStarted, allCombatants, onLogDamage }) => {
@@ -22,10 +22,15 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
     const [localStats, setLocalStats] = useState(combatant.stats || {});
     const statsTimeout = useRef(null);
 
+    // State for monster nickname
+    const [localNickname, setLocalNickname] = useState(combatant.nickname || '');
+    const nicknameTimeout = useRef(null);
+
     // Sync local state when combatant changes
     useEffect(() => {
         setLocalInitiative(combatant.initiative);
         setLocalHp(combatant.hp);
+        setLocalNickname(combatant.nickname || '');
     }, [combatant.id]);
 
     // Update timer every second when this is the current turn and combat has started
@@ -105,9 +110,21 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
         }, 300);
     };
 
+    // Helper to get display name with number badge for logs
+    const getDisplayName = (combatant) => {
+        let name = combatant.name;
+        if (combatant.type === 'monster' && combatant.monsterNumber) {
+            name += ` #${combatant.monsterNumber}`;
+        }
+        if (combatant.nickname) {
+            name += ` (${combatant.nickname})`;
+        }
+        return name;
+    };
+
     const handleAttackerSelect = (attacker) => {
         if (onLogDamage && pendingDamage) {
-            onLogDamage(attacker.name, pendingDamage.target, pendingDamage.amount);
+            onLogDamage(attacker, combatant, pendingDamage.amount, localHp, combatant.maxHp);
         }
         setShowLogButton(false);
         setShowAttackerPopover(false);
@@ -211,6 +228,21 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
         return mod >= 0 ? `+${mod}` : `${mod}`;
     };
 
+    const handleNicknameChange = (e) => {
+        const value = e.target.value;
+        setLocalNickname(value);
+
+        // Clear existing timeout
+        if (nicknameTimeout.current) {
+            clearTimeout(nicknameTimeout.current);
+        }
+
+        // Debounce the update
+        nicknameTimeout.current = setTimeout(() => {
+            updateField('nickname', value);
+        }, 500);
+    };
+
     return (
         <div className={`rounded border transition-all duration-500 ease-in-out ${isCurrentTurn && combatStarted
             ? 'bg-dnd-accent/10 border-dnd-accent shadow-lg shadow-dnd-accent/20'
@@ -277,6 +309,26 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
                     <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-dnd-muted uppercase tracking-wide">Initiative</label>
                         <div className="flex items-center gap-2">
+                            {/* D20 Roll Button */}
+                            {!combatStarted && (
+                                <button
+                                    onClick={() => {
+                                        const roll = Math.floor(Math.random() * 20) + 1;
+                                        const dex = combatant.stats?.dexterity || 10;
+                                        const mod = Math.floor((dex - 10) / 2);
+                                        const total = Math.max(0, roll + mod);
+                                        debouncedInitiativeUpdate(total);
+                                    }}
+                                    className="p-1 hover:bg-dnd-accent/10 rounded-full transition-colors group relative flex items-center justify-center ml-3"
+                                    title={`Roll Initiative (1d20 + DEX Mod)`}
+                                >
+                                    <img
+                                        src="/dice-icon.png"
+                                        alt="Roll"
+                                        className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                                    />
+                                </button>
+                            )}
                             <button
                                 onClick={() => adjustValue('initiative', -1)}
                                 disabled={combatStarted}
@@ -310,6 +362,20 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
                         </div>
                     </div>
 
+                    {/* Nickname Control (Monsters Only) */}
+                    {combatant.type === 'monster' && (
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-dnd-muted uppercase tracking-wide">Nickname</label>
+                            <input
+                                type="text"
+                                value={localNickname}
+                                onChange={handleNicknameChange}
+                                placeholder="Optional"
+                                className="w-48 bg-dnd-dark border border-dnd-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:border-dnd-accent transition-colors"
+                            />
+                        </div>
+                    )}
+
                     {/* HP Control */}
                     <div className="flex items-center justify-between relative">
                         <label className="text-sm font-medium text-dnd-muted uppercase tracking-wide">Hit Points</label>
@@ -327,16 +393,44 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
                                     >
                                         <X size={10} className="text-slate-400" />
                                     </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowAttackerPopover(!showAttackerPopover);
-                                        }}
-                                        className="w-7 h-7 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded flex items-center justify-center transition-all"
-                                        title="Log damage attacker"
-                                    >
-                                        <Scroll size={14} className="text-slate-200" />
-                                    </button>
+                                    <div className="relative">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowAttackerPopover(!showAttackerPopover);
+                                            }}
+                                            className="w-7 h-7 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded flex items-center justify-center transition-all"
+                                            title="Log damage attacker"
+                                        >
+                                            <Scroll size={14} className="text-slate-200" />
+                                        </button>
+                                        {showAttackerPopover && (
+                                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 bg-[#09090b]/60 backdrop-blur-sm border border-zinc-800 rounded shadow-lg z-10 w-64">
+                                                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#09090b]/60 border-t border-l border-zinc-800 transform rotate-45"></div>
+                                                <div className="px-3 py-2 flex items-center justify-between border-b border-zinc-800/50">
+                                                    <span className="text-xs font-medium text-dnd-muted/80">Log Attacker</span>
+                                                    {/* Intentionally removed click handler on header as requested */}
+                                                </div>
+
+                                                {allCombatants && (
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {allCombatants
+                                                            .filter(c => c.id !== combatant.id)
+                                                            .map(attacker => (
+                                                                <button
+                                                                    key={attacker.id}
+                                                                    onClick={() => handleAttackerSelect(attacker)}
+                                                                    className="w-full px-3 py-1.5 text-left hover:bg-dnd-accent/10 transition-colors flex items-center justify-between group"
+                                                                >
+                                                                    <span className="text-xs text-dnd-text">{getDisplayName(attacker)}</span>
+                                                                    <span className="text-[10px] text-dnd-muted opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
                             <button
@@ -360,40 +454,7 @@ const InitiativeTrackerDetail = ({ combatant, position, isCurrentTurn, turnStart
                             </button>
                         </div>
 
-                        {/* Attacker Attribution Popover */}
-                        {showAttackerPopover && (
-                            <div className="absolute left-0 right-0 top-full mt-2 bg-slate-700 border border-slate-600 rounded shadow-lg z-10 overflow-hidden">
-                                <div
-                                    className="px-3 py-2 hover:bg-slate-600 cursor-pointer flex items-center justify-between transition-colors"
-                                    onClick={() => setAttackerListExpanded(!attackerListExpanded)}
-                                >
-                                    <span className="text-xs font-medium text-slate-200">Someone Attacking?</span>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); closeAttackerPopover(); }}
-                                        className="p-0.5 hover:bg-slate-500 rounded transition-colors"
-                                    >
-                                        <X size={12} className="text-slate-300" />
-                                    </button>
-                                </div>
 
-                                {allCombatants && (
-                                    <div className="max-h-48 overflow-y-auto border-t border-slate-600">
-                                        {allCombatants
-                                            .filter(c => c.id !== combatant.id)
-                                            .map(attacker => (
-                                                <button
-                                                    key={attacker.id}
-                                                    onClick={() => handleAttackerSelect(attacker)}
-                                                    className="w-full px-3 py-1.5 text-left hover:bg-slate-600 transition-colors flex items-center justify-between group"
-                                                >
-                                                    <span className="text-xs text-slate-200">{attacker.name}</span>
-                                                    <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
-                                                </button>
-                                            ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
 
                     {/* D&D Beyond Sync Checkbox (for D&D Beyond imports only) */}

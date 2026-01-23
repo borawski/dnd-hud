@@ -46,6 +46,41 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const handleAuthResponse = (data) => {
+        setToken(data.token);
+        setUser(data.user);
+        localStorage.setItem('dnd_hud_token', data.token);
+        localStorage.setItem('dnd_hud_user', JSON.stringify(data.user));
+        return data;
+    };
+
+    const loginWithGoogle = async (data) => {
+        try {
+            const payload = {
+                clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || "220866471456-t2odbshu8c63pb767dtn8armo9dsesnu.apps.googleusercontent.com"
+            };
+
+            if (data.credential) payload.credential = data.credential;
+            if (data.access_token) payload.accessToken = data.access_token; // Map access_token (from hook) to accessToken (expected by backend)
+
+            const response = await fetch(`${API_URL}/api/dm/google-auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Google login failed');
+            }
+
+            const responseData = await response.json();
+            return handleAuthResponse(responseData);
+        } catch (err) {
+            throw err;
+        }
+    };
+
     const signup = async (email, password, displayName) => {
         try {
             const response = await fetch(`${API_URL}/api/dm/signup`, {
@@ -79,7 +114,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout, loginWithGoogle }}>
             {children}
         </AuthContext.Provider>
     );

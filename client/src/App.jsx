@@ -7,7 +7,11 @@ import DMLogin from './components/auth/DMLogin';
 import DMSignup from './components/auth/DMSignup';
 import DMDashboard from './components/campaigns/DMDashboard';
 import AdminView from './components/AdminView';
+
 import PlayerView from './components/PlayerView';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "220866471456-t2odbshu8c63pb767dtn8armo9dsesnu.apps.googleusercontent.com";
 
 // Protected route wrapper for DM-only pages
 function ProtectedRoute({ children }) {
@@ -26,59 +30,63 @@ function ProtectedRoute({ children }) {
 
 
 
+
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-dnd-dark text-dnd-text">
-          <Routes>
-            {/* Landing page */}
-            <Route path="/" element={<Landing />} />
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-dnd-dark text-dnd-text">
+            <Routes>
+              {/* Landing page */}
+              <Route path="/" element={<Landing />} />
 
-            {/* DM Authentication */}
-            <Route path="/dm/login" element={<DMLogin />} />
-            <Route path="/dm/signup" element={<DMSignup />} />
+              {/* DM Authentication */}
+              <Route path="/dm/login" element={<DMLogin />} />
+              <Route path="/dm/signup" element={<DMSignup />} />
 
-            {/* DM Dashboard (protected, no GameProvider needed) */}
-            <Route
-              path="/dm/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DMDashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* DM Dashboard (protected, no GameProvider needed) */}
+              <Route
+                path="/dm/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DMDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Routes with GameProvider wrapper (encounter-aware routes) */}
-            {/* DM Admin View for specific encounter (protected) */}
-            <Route
-              path="/dm/:encounterId"
-              element={
-                <ProtectedRoute>
+              {/* Routes with GameProvider wrapper (encounter-aware routes) */}
+              {/* DM Admin View for specific encounter (protected) */}
+              <Route
+                path="/dm/:encounterId"
+                element={
+                  <ProtectedRoute>
+                    <GameProvider>
+                      <AdminView />
+                    </GameProvider>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Public Player View (no auth required) */}
+              <Route
+                path="/play/:encounterId"
+                element={
                   <GameProvider>
-                    <AdminView />
+                    <PlayerView />
                   </GameProvider>
-                </ProtectedRoute>
-              }
-            />
+                }
+              />
 
-            {/* Public Player View (no auth required) */}
-            <Route
-              path="/play/:encounterId"
-              element={
-                <GameProvider>
-                  <PlayerView />
-                </GameProvider>
-              }
-            />
-
-            {/* Legacy routes - redirect to dashboard */}
-            <Route path="/admin" element={<Navigate to="/dm/dashboard" replace />} />
-            <Route path="/player" element={<Navigate to="/dm/dashboard" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+              {/* Legacy routes - redirect to dashboard */}
+              <Route path="/admin" element={<Navigate to="/dm/dashboard" replace />} />
+              <Route path="/player" element={<Navigate to="/dm/dashboard" replace />} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Minus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Minus, Link2 } from 'lucide-react';
 import { API_URL } from '../../config';
 import { useGame } from '../../context/GameContext';
 import { useAuth } from '../../context/AuthContext';
@@ -91,7 +91,7 @@ const AddPlayer = () => {
     };
 
     return (
-        <div className="bg-dnd-card p-4 rounded-xl border border-dnd-muted/20">
+        <div className="bg-dnd-card p-3 rounded-xl border border-dnd-muted/20">
             <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
                 <h3 className="text-lg font-serif text-dnd-accent">Add Player</h3>
                 <button className="p-1 hover:bg-dnd-dark/50 rounded transition-colors">
@@ -105,16 +105,16 @@ const AddPlayer = () => {
                     <div className="flex gap-2 mb-3">
                         <button
                             onClick={() => setImportMode('dndbeyond')}
-                            className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${importMode === 'dndbeyond'
+                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${importMode === 'dndbeyond'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
                         >
-                            D&D Beyond Import
+                            Import
                         </button>
                         <button
                             onClick={() => setImportMode('manual')}
-                            className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${importMode === 'manual'
+                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${importMode === 'manual'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
@@ -126,10 +126,11 @@ const AddPlayer = () => {
                     {/* D&D Beyond Import Mode */}
                     {importMode === 'dndbeyond' && (
                         <>
-                            <div className="flex gap-2">
+                            <div className="relative">
+                                <Link2 className="absolute left-3 top-3 text-dnd-muted" size={18} />
                                 <input
                                     placeholder="D&D Beyond URL or ID"
-                                    className="flex-1 bg-dnd-dark border border-dnd-muted/30 rounded px-2 py-1 text-sm"
+                                    className="w-full bg-dnd-dark border border-dnd-muted/30 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-dnd-accent"
                                     onKeyDown={async (e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.target.value.trim();
@@ -288,7 +289,7 @@ const AddPlayer = () => {
                             {/* Create Button */}
                             <button
                                 onClick={handleCreateManualPlayer}
-                                className="w-full bg-dnd-accent hover:bg-dnd-accent/80 text-dnd-dark font-medium py-2 px-4 rounded transition-colors"
+                                className="w-full bg-dnd-accent hover:bg-dnd-accent/80 text-dnd-dark font-bold text-xs uppercase tracking-wide py-1.5 px-4 rounded transition-colors"
                             >
                                 Create Player
                             </button>

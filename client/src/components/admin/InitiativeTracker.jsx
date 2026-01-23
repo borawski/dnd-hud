@@ -216,16 +216,33 @@ const InitiativeTracker = ({ gameState, updateState }) => {
         setExpandedId(expandedId === id ? null : id);
     };
 
-    const logDamage = (attackerName, targetName, damage) => {
+    const logDamage = (attacker, target, damage, currentHp, maxHp) => {
         const timestamp = new Date().toLocaleTimeString();
+
+        // Helper to format name with number badge
+        const getDisplayName = (combatant) => {
+            if (combatant.type === 'monster' && combatant.monsterNumber) {
+                return `${combatant.name} #${combatant.monsterNumber}`;
+            }
+            return combatant.name;
+        };
+
+        const targetName = getDisplayName(target);
         let logEntry;
 
-        if (attackerName) {
+        if (attacker) {
             // Specific attacker was selected
+            const attackerName = getDisplayName(attacker);
             logEntry = `${timestamp} - ${attackerName} damaged ${targetName} for ${damage} HP`;
+            if (typeof currentHp !== 'undefined' && typeof maxHp !== 'undefined') {
+                logEntry += ` (${currentHp}/${maxHp})`;
+            }
         } else {
             // Generic damage (no attacker selected)
             logEntry = `${timestamp} - ${targetName} was hit for ${damage} HP`;
+            if (typeof currentHp !== 'undefined' && typeof maxHp !== 'undefined') {
+                logEntry += ` (${currentHp}/${maxHp})`;
+            }
         }
 
         // Add to local log (you might want to send this to server)
@@ -238,7 +255,7 @@ const InitiativeTracker = ({ gameState, updateState }) => {
     return (
         <div className="flex-1 flex flex-col bg-dnd-card rounded-xl border border-dnd-muted/20 overflow-hidden">
             <div className="p-3 border-b border-dnd-muted/20 bg-dnd-dark/30">
-                <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <h2 className="text-lg font-serif flex items-center gap-2">
                             <Sword size={18} className="text-dnd-accent" />
@@ -246,7 +263,7 @@ const InitiativeTracker = ({ gameState, updateState }) => {
                         </h2>
                         <div className={`px-2 py-1 rounded text-xs font-bold bg-dnd-accent/10 text-dnd-accent border border-dnd-accent/30 transition-all ${roundChanged ? 'animate-pulse-glow' : ''
                             }`}>
-                            Round {gameState.current_round || 1}
+                            {combatStarted ? `Round ${gameState.current_round || 1}` : 'Planning'}
                         </div>
                     </div>
                     <div className="flex gap-2 justify-end sm:justify-start">
@@ -265,7 +282,7 @@ const InitiativeTracker = ({ gameState, updateState }) => {
 
                 {/* Progress Bar */}
                 {sortedOrder.length > 0 && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-2">
                         <div className="flex-1 bg-dnd-dark rounded-full h-2 overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-dnd-accent to-red-400 transition-all duration-300 ease-out"
