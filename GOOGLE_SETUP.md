@@ -23,7 +23,11 @@ To enable Google Sign-In, you need to configure a project in the Google Cloud Co
    - `http://localhost:5173` (for local development)
    - `http://localhost:3000` (if running built client from server)
    - Your production domain (if applicable)
-6. Click **Create**.
+6. Under **Authorized redirect URIs**, add:
+   - `http://localhost:5173` (for local development)
+   - `http://localhost:3000` (if running built client from server)
+   - Your production domain (if applicable)
+7. Click **Create**.
 
 ## 4. Configure Application
 1. Copy the **Client ID** (e.g., `12345...apps.googleusercontent.com`).
