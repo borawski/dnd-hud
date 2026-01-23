@@ -6,6 +6,7 @@ import { API_URL } from '../../config';
 const MonsterSearch = () => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
+    const [addingId, setAddingId] = useState(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState('search'); // 'search' or 'manual'
     const { gameState, updateState } = useGame();
@@ -90,55 +91,62 @@ const MonsterSearch = () => {
     };
 
     const addMonster = async (monster) => {
-        // Fetch full monster details from D&D 5e API
-        let fullMonsterData = null;
+        if (addingId) return;
+        setAddingId(monster.index_name);
+
         try {
-            const apiUrl = `https://www.dnd5eapi.co${monster.url}`;
-            const detailRes = await fetch(apiUrl);
-            fullMonsterData = await detailRes.json();
-        } catch (err) {
-            console.error('Failed to fetch full monster data:', err);
+            // Fetch full monster details from D&D 5e API
+            let fullMonsterData = null;
+            try {
+                const apiUrl = `https://www.dnd5eapi.co${monster.url}`;
+                const detailRes = await fetch(apiUrl);
+                fullMonsterData = await detailRes.json();
+            } catch (err) {
+                console.error('Failed to fetch full monster data:', err);
+            }
+
+            // Use full data if available, otherwise use basic monster from search
+            const monsterData = fullMonsterData || monster;
+
+            // Get dexterity with fallback
+            const dexterity = monsterData.dexterity || 10;
+            const dexMod = Math.floor((dexterity - 10) / 2);
+            const initiativeRoll = Math.floor(Math.random() * 20) + 1 + dexMod;
+
+            const newCombatant = {
+                id: Date.now(),
+                baseName: monster.name,
+                name: monster.name,
+                monsterNumber: undefined, // Handled in addToInitiative
+                hp: monsterData.hit_points,
+                maxHp: monsterData.hit_points,
+                ac: typeof monsterData.armor_class === 'number'
+                    ? monsterData.armor_class
+                    : (monsterData.armor_class?.[0]?.value || 10),
+                initiative: initiativeRoll,
+                type: 'monster',
+                // Store full stats with defaults
+                stats: {
+                    str: monsterData.strength || 10,
+                    dex: monsterData.dexterity || 10,
+                    con: monsterData.constitution || 10,
+                    int: monsterData.intelligence || 10,
+                    wis: monsterData.wisdom || 10,
+                    cha: monsterData.charisma || 10
+                },
+                speed: monsterData.speed,
+                actions: monsterData.actions || [],
+                special_abilities: monsterData.special_abilities || [],
+                legendary_actions: monsterData.legendary_actions || [],
+                size: monsterData.size,
+                creature_type: monsterData.type,
+                cr: monsterData.challenge_rating
+            };
+
+            addToInitiative(newCombatant);
+        } finally {
+            setAddingId(null);
         }
-
-        // Use full data if available, otherwise use basic monster from search
-        const monsterData = fullMonsterData || monster;
-
-        // Get dexterity with fallback
-        const dexterity = monsterData.dexterity || 10;
-        const dexMod = Math.floor((dexterity - 10) / 2);
-        const initiativeRoll = Math.floor(Math.random() * 20) + 1 + dexMod;
-
-        const newCombatant = {
-            id: Date.now(),
-            baseName: monster.name,
-            name: monster.name,
-            monsterNumber: undefined, // Handled in addToInitiative
-            hp: monsterData.hit_points,
-            maxHp: monsterData.hit_points,
-            ac: typeof monsterData.armor_class === 'number'
-                ? monsterData.armor_class
-                : (monsterData.armor_class?.[0]?.value || 10),
-            initiative: initiativeRoll,
-            type: 'monster',
-            // Store full stats with defaults
-            stats: {
-                str: monsterData.strength || 10,
-                dex: monsterData.dexterity || 10,
-                con: monsterData.constitution || 10,
-                int: monsterData.intelligence || 10,
-                wis: monsterData.wisdom || 10,
-                cha: monsterData.charisma || 10
-            },
-            speed: monsterData.speed,
-            actions: monsterData.actions || [],
-            special_abilities: monsterData.special_abilities || [],
-            legendary_actions: monsterData.legendary_actions || [],
-            size: monsterData.size,
-            creature_type: monsterData.type,
-            cr: monsterData.challenge_rating
-        };
-
-        addToInitiative(newCombatant);
     };
 
     const addToInitiative = (combatant) => {
@@ -185,7 +193,7 @@ const MonsterSearch = () => {
     };
 
     return (
-        <div className="bg-dnd-card p-4 rounded-xl border border-dnd-muted/20 flex flex-col">
+        <div className="bg-dnd-card p-3 rounded-xl border border-dnd-muted/20 flex flex-col">
             <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
                 <h2 className="text-xl font-serif">Bestiary</h2>
                 <button className="p-1 hover:bg-dnd-dark/50 rounded transition-colors">
@@ -199,7 +207,7 @@ const MonsterSearch = () => {
                     <div className="flex flex-col sm:flex-row gap-2 mb-3">
                         <button
                             onClick={() => setActiveTab('search')}
-                            className={`flex-1 px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'search'
+                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'search'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
@@ -208,7 +216,7 @@ const MonsterSearch = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('manual')}
-                            className={`flex-1 px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'manual'
+                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'manual'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
@@ -232,22 +240,33 @@ const MonsterSearch = () => {
                             </div>
 
                             <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
-                                {results.map(m => (
-                                    <div key={m.index_name} className="flex items-center justify-between p-3 bg-dnd-dark/50 rounded-lg hover:bg-dnd-dark transition-colors group">
-                                        <div className="flex-1">
-                                            <div className="font-bold">{m.name}</div>
-                                            <div className="text-xs text-dnd-muted capitalize font-serif">
-                                                {m.size} {m.type} • CR {m.challenge_rating || '?'} • HP {m.hit_points || '?'} • AC {m.armor_class || '?'}
+                                {results.map(m => {
+                                    const isThisAdding = addingId === m.index_name;
+                                    const isDisabled = addingId !== null && !isThisAdding;
+
+                                    return (
+                                        <div key={m.index_name} className="flex items-center justify-between p-3 bg-dnd-dark/50 rounded-lg hover:bg-dnd-dark transition-colors group">
+                                            <div className="flex-1 min-w-0 pr-2">
+                                                <div className="font-bold text-sm truncate">{m.name}</div>
+                                                <div className="text-[10px] text-dnd-muted capitalize font-serif truncate">
+                                                    {m.size} {m.type} • CR {m.challenge_rating || '?'} • HP {m.hit_points || '?'} • AC {m.armor_class || '?'}
+                                                </div>
                                             </div>
+                                            <button
+                                                onClick={() => addMonster(m)}
+                                                disabled={addingId !== null}
+                                                className={`p-1.5 rounded transition-all flex-shrink-0 ${isThisAdding
+                                                    ? 'bg-dnd-accent text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse'
+                                                    : isDisabled
+                                                        ? 'bg-dnd-muted/10 text-dnd-muted cursor-not-allowed opacity-30 shadow-none'
+                                                        : 'bg-dnd-accent/10 text-dnd-accent hover:bg-dnd-accent hover:text-white'
+                                                    }`}
+                                            >
+                                                <Plus size={14} />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => addMonster(m)}
-                                            className="p-2 bg-dnd-accent/10 text-dnd-accent rounded hover:bg-dnd-accent hover:text-white transition-colors"
-                                        >
-                                            <Plus size={16} />
-                                        </button>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </>
                     )}
@@ -334,7 +353,7 @@ const MonsterSearch = () => {
                             <button
                                 onClick={createManualMonster}
                                 disabled={!manualMonster.name.trim()}
-                                className="w-full bg-dnd-accent hover:bg-dnd-accent/80 text-dnd-dark font-medium py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-dnd-accent hover:bg-dnd-accent/80 text-dnd-dark font-bold text-xs uppercase tracking-wide py-1.5 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Add Monster
                             </button>

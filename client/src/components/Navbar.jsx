@@ -1,6 +1,7 @@
 import React from 'react';
 import { LogOut, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BetaBadge from './common/BetaBadge';
 
 /**
  * Reusable Navbar component for Rollbound
@@ -23,8 +24,16 @@ export default function Navbar({ userName, onLogout, backLink, backText }) {
                             className="w-12 h-12 sm:w-14 sm:h-14 object-contain flex-shrink-0"
                         />
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-dnd-text leading-tight">
+                            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-dnd-text leading-tight flex items-center gap-3">
                                 Rollbound
+                                <div className="relative">
+                                    <BetaBadge
+                                        className="relative block transform-none"
+                                        alignmentClassName="right-0 sm:left-0"
+                                        popoverClassName="top-full mt-3"
+                                        arrowClassName="absolute -top-1.5 right-4 sm:left-4 w-3 h-3 bg-[#09090b]/60 border-t border-l border-zinc-800 transform rotate-45"
+                                    />
+                                </div>
                             </h1>
                             {userName && (
                                 <p className="text-sm text-dnd-muted hidden sm:block">
@@ -35,7 +44,8 @@ export default function Navbar({ userName, onLogout, backLink, backText }) {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 relative">
+
                         {backLink && (
                             <Link
                                 to={backLink}
@@ -49,7 +59,7 @@ export default function Navbar({ userName, onLogout, backLink, backText }) {
                         {onLogout && (
                             <button
                                 onClick={onLogout}
-                                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-dnd-dark hover:bg-dnd-dark/70 border border-dnd-border rounded-lg transition-colors text-dnd-muted hover:text-red-400 text-sm"
+                                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-dnd-dark hover:bg-dnd-dark/70 border border-dnd-border rounded-sm transition-colors text-dnd-muted hover:text-red-400 text-sm"
                             >
                                 <LogOut size={16} />
                                 <span className="hidden sm:inline font-medium">Logout</span>
