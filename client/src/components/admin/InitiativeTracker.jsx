@@ -286,17 +286,17 @@ const InitiativeTracker = ({ gameState, updateState }) => {
                         <div className="flex-1 bg-dnd-dark rounded-full h-2 overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-dnd-accent to-red-400 transition-all duration-300 ease-out"
-                                style={{ width: `${(sortedOrder.filter(c => c.has_acted).length / sortedOrder.length) * 100}%` }}
+                                style={{ width: `${combatStarted ? ((gameState.current_turn_index + 1) / sortedOrder.length) * 100 : 0}%` }}
                             />
                         </div>
                         <div className="text-xs text-dnd-muted font-mono whitespace-nowrap">
-                            {sortedOrder.filter(c => c.has_acted).length} / {sortedOrder.length}
+                            {combatStarted ? gameState.current_turn_index + 1 : 0} / {sortedOrder.length}
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 hide-scrollbar">
                 {sortedOrder.map((combatant, idx) => (
                     <div key={combatant.id} className="transition-all duration-500 ease-in-out">
                         <InitiativeTrackerDetail

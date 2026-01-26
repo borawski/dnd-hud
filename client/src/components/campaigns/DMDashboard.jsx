@@ -4,6 +4,7 @@ import { Plus, Sword, Copy, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import Navbar from '../Navbar';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 export default function DMDashboard() {
     const [encounters, setEncounters] = useState([]);
@@ -11,6 +12,11 @@ export default function DMDashboard() {
     const [error, setError] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [newEncounterName, setNewEncounterName] = useState('');
+
+    // Delete Confirmation State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [encounterToDelete, setEncounterToDelete] = useState(null);
+
     const { user, token, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -64,8 +70,14 @@ export default function DMDashboard() {
         }
     };
 
-    const handleDeleteEncounter = async (encounterId) => {
-        if (!confirm('Are you sure you want to delete this encounter?')) return;
+    const confirmDelete = (encounter) => {
+        setEncounterToDelete(encounter);
+        setDeleteModalOpen(true);
+    };
+
+    const handleDeleteEncounter = async () => {
+        if (!encounterToDelete) return;
+        const encounterId = encounterToDelete.id;
 
         try {
             const response = await fetch(`${API_URL}/api/dm/encounters/${encounterId}`, {
@@ -80,6 +92,9 @@ export default function DMDashboard() {
             setEncounters(encounters.filter(c => c.id !== encounterId));
         } catch (err) {
             setError(err.message);
+        } finally {
+            setEncounterToDelete(null);
+            setDeleteModalOpen(false);
         }
     };
 
@@ -101,10 +116,21 @@ export default function DMDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-dnd-dark">
+        <div className="min-h-screen bg-dnd-dark text-dnd-text">
             <Navbar userName={user?.displayName} onLogout={logout} />
 
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleDeleteEncounter}
+                title="Delete Encounter"
+                message={`Are you sure you want to delete "${encounterToDelete?.name}"? This action cannot be undone.`}
+                confirmText="Delete"
+                isDestructive={true}
+            />
+
             <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+
                 {error && (
                     <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
                         {error}
@@ -165,7 +191,7 @@ export default function DMDashboard() {
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => handleDeleteEncounter(encounter.id)}
+                                            onClick={() => confirmDelete(encounter)}
                                             className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-dnd-muted hover:text-red-400 flex-shrink-0"
                                             title="Delete encounter"
                                         >

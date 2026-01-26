@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import io from 'socket.io-client';
+// import io from 'socket.io-client'; // Using CDN
 import { API_URL, SOCKET_URL } from '../config';
 import { useAuth } from './AuthContext';
 
@@ -10,6 +10,8 @@ export const GameProvider = ({ children }) => {
     const { encounterId } = useParams(); // Get encounter ID from URL
     const location = useLocation();
     const { token } = useAuth();
+
+    console.log('GameProvider init:', { encounterId, hasToken: !!token });
 
     const [gameState, setGameState] = useState({
         active_map: '',
@@ -34,7 +36,13 @@ export const GameProvider = ({ children }) => {
             ? { auth: { token } }  // DM authenticates with token
             : {};  // Player doesn't need auth
 
-        const newSocket = io(SOCKET_URL || window.location.origin, socketConfig);
+        // Check for CDN
+        if (typeof window.io === 'undefined') {
+            console.error('Socket.io not loaded');
+            return;
+        }
+
+        const newSocket = window.io(SOCKET_URL || window.location.origin, socketConfig);
 
         newSocket.on('connect', () => {
             console.log('Socket connected as', isDM ? 'DM' : 'Player');
@@ -168,6 +176,7 @@ export const GameProvider = ({ children }) => {
         }
     };
 
+    console.log('GameProvider rendering children');
     return (
         <GameContext.Provider value={{
             gameState,

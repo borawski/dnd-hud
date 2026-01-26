@@ -14,14 +14,14 @@ import BetaBadge from './common/BetaBadge';
 export default function Navbar({ userName, onLogout, backLink, backText }) {
     return (
         <nav className="bg-dnd-card border-b border-dnd-border">
-            <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-2">
                 <div className="flex items-center justify-between">
                     {/* Left: Logo and Title */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-0">
                         <img
                             src="/rollbound-logo.png"
                             alt="Rollbound"
-                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain flex-shrink-0"
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-contain flex-shrink-0 -my-4 sm:-my-6 -mr-2"
                         />
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-dnd-text leading-tight flex items-center gap-3">
