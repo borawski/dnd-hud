@@ -10,6 +10,7 @@ import AdminView from './components/AdminView';
 
 import PlayerView from './components/PlayerView';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Toaster } from 'react-hot-toast';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "220866471456-t2odbshu8c63pb767dtn8armo9dsesnu.apps.googleusercontent.com";
 
@@ -38,6 +39,29 @@ function App() {
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-dnd-dark text-dnd-text">
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1a1a2e',
+                  color: '#e0e0e0',
+                  border: '1px solid #16213e',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#4ade80',
+                    secondary: '#1a1a2e',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#1a1a2e',
+                  },
+                },
+              }}
+            />
             <Routes>
               {/* Landing page */}
               <Route path="/" element={<Landing />} />

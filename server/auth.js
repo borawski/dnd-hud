@@ -81,6 +81,40 @@ function verifyToken(token) {
 }
 
 /**
+ * Decode token and check expiration without throwing errors
+ * Returns { valid: boolean, expired: boolean, payload: object | null }
+ */
+function decodeToken(token) {
+    try {
+        const [encodedHeader, encodedPayload, signature] = token.split('.');
+
+        // Verify signature
+        const expectedSignature = crypto
+            .createHmac('sha256', JWT_SECRET)
+            .update(`${encodedHeader}.${encodedPayload}`)
+            .digest('base64url');
+
+        if (signature !== expectedSignature) {
+            return { valid: false, expired: false, payload: null };
+        }
+
+        // Decode payload
+        const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString());
+
+        // Check expiration
+        const isExpired = payload.exp && Date.now() > payload.exp;
+
+        return {
+            valid: !isExpired,
+            expired: isExpired,
+            payload: isExpired ? null : payload
+        };
+    } catch (err) {
+        return { valid: false, expired: false, payload: null };
+    }
+}
+
+/**
  * Express middleware to authenticate DM requests
  */
 function authenticateToken(req, res, next) {
@@ -96,6 +130,11 @@ function authenticateToken(req, res, next) {
         req.user = user;
         next();
     } catch (err) {
+        // Check if token is expired vs invalid
+        const decoded = decodeToken(token);
+        if (decoded.expired) {
+            return res.status(401).json({ error: 'Token expired', expired: true });
+        }
         return res.status(403).json({ error: 'Invalid or expired token' });
     }
 }
@@ -112,6 +151,7 @@ module.exports = {
     verifyPassword,
     generateToken,
     verifyToken,
+    decodeToken,
     authenticateToken,
     generateEncounterId
 };

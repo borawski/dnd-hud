@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_URL } from '../config';
+import { decodeJWT } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -8,11 +10,29 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [token, setToken] = useState(localStorage.getItem('dnd_hud_token'));
 
+    // Define logout function first so it can be used in useEffect hooks
+    const logout = () => {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('dnd_hud_token');
+        localStorage.removeItem('dnd_hud_user');
+    };
+
     // Check if user is logged in on mount
     useEffect(() => {
         if (token) {
-            // Token exists, assume user is logged in
-            // In a production app, you'd validate the token with the server
+            // Check if token is expired
+            const decoded = decodeJWT(token);
+
+            if (decoded.expired) {
+                // Token is expired, logout immediately
+                console.log('Token expired on mount, logging out');
+                logout();
+                setIsLoading(false);
+                return;
+            }
+
+            // Token is valid, restore user session
             const storedUser = localStorage.getItem('dnd_hud_user');
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
@@ -20,6 +40,20 @@ export const AuthProvider = ({ children }) => {
         }
         setIsLoading(false);
     }, [token]);
+
+    // Listen for auth:expired events from API calls
+    useEffect(() => {
+        const handleAuthExpired = () => {
+            console.log('Auth expired event received, logging out');
+            toast.error('Your session has expired. Please log in again.', {
+                duration: 5000,
+            });
+            logout();
+        };
+
+        window.addEventListener('auth:expired', handleAuthExpired);
+        return () => window.removeEventListener('auth:expired', handleAuthExpired);
+    }, []);
 
     const login = async (email, password) => {
         try {
@@ -104,13 +138,6 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             throw err;
         }
-    };
-
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('dnd_hud_token');
-        localStorage.removeItem('dnd_hud_user');
     };
 
     return (
