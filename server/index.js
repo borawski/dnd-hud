@@ -444,11 +444,33 @@ app.post('/api/encounters/:encounterId/import-character', authenticateToken, asy
             dndbeyondId: characterId,
             syncEnabled: false
         };
-
         res.json({ character: newCharacter });
     } catch (err) {
         console.error('Error importing character:', err);
-        res.status(500).json({ error: 'Failed to import character' });
+
+        // Check if error is from D&D Beyond API
+        if (err.response) {
+            const status = err.response.status;
+
+            if (status === 403) {
+                return res.status(400).json({
+                    error: 'This character is private or restricted. Please make sure the character is set to "Public" in D&D Beyond character settings.',
+                    code: 'CHARACTER_PRIVATE'
+                });
+            } else if (status === 404) {
+                return res.status(404).json({
+                    error: 'Character not found. Please check the character ID.',
+                    code: 'CHARACTER_NOT_FOUND'
+                });
+            } else if (status === 429) {
+                return res.status(429).json({
+                    error: 'Too many requests to D&D Beyond. Please try again in a moment.',
+                    code: 'RATE_LIMITED'
+                });
+            }
+        }
+
+        res.status(500).json({ error: 'Failed to import character. Please try again.' });
     }
 });
 
