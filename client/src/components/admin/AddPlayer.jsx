@@ -3,12 +3,14 @@ import { ChevronDown, ChevronRight, Plus, Minus, Link2 } from 'lucide-react';
 import { API_URL } from '../../config';
 import { useGame } from '../../context/GameContext';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const AddPlayer = () => {
     const { gameState, updateState, encounterId } = useGame();
     const { token } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [importMode, setImportMode] = useState('dndbeyond'); // 'dndbeyond' or 'manual'
+    const [importError, setImportError] = useState(null); // Error message for import failures
 
     // Manual player form state
     const [manualPlayer, setManualPlayer] = useState({
@@ -32,7 +34,7 @@ const AddPlayer = () => {
 
     const handleCreateManualPlayer = async () => {
         if (!manualPlayer.name.trim()) {
-            alert('Please enter a player name');
+            toast.error('Please enter a player name');
             return;
         }
 
@@ -78,7 +80,7 @@ const AddPlayer = () => {
                 level: 1
             });
         } catch (err) {
-            alert(`Failed to create player: ${err.message}`);
+            toast.error(`Failed to create player: ${err.message}`);
         }
     };
 
@@ -134,6 +136,7 @@ const AddPlayer = () => {
                                     onKeyDown={async (e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.target.value.trim();
+                                            setImportError(null); // Clear previous errors
 
                                             // Extract character ID from URL or use as-is if it's just an ID
                                             let characterId = val;
@@ -171,8 +174,9 @@ const AddPlayer = () => {
                                                 });
 
                                                 e.target.value = '';
+                                                setImportError(null); // Clear error on success
                                             } catch (err) {
-                                                alert(`Failed to import: ${err.message}`);
+                                                setImportError(err.message); // Set error message
                                                 e.target.value = val;
                                             }
                                             e.target.disabled = false;
@@ -180,6 +184,11 @@ const AddPlayer = () => {
                                     }}
                                 />
                             </div>
+                            {importError && (
+                                <div className="mt-2 mb-2 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                                    {importError}
+                                </div>
+                            )}
                             <p className="text-xs text-dnd-muted mt-1">Paste URL and hit Enter</p>
                         </>
                     )}
