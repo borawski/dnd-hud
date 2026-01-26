@@ -11,11 +11,9 @@ const BetaBadge = ({
     return (
         <div
             className={`${className} z-50 flex flex-col items-end`}
-            onMouseEnter={() => setShowBetaMessage(true)}
-            onMouseLeave={() => setShowBetaMessage(false)}
         >
             <button
-                className="bg-yellow-400 text-black font-black text-[10px] px-2 py-0.5 rounded-sm tracking-widest hover:scale-105 transition-transform cursor-help -rotate-2 border-2 border-black outline-none focus:outline-none focus:ring-0"
+                className="bg-yellow-400 text-black font-sans font-black text-[10px] px-2 py-0.5 rounded-sm tracking-widest hover:scale-105 transition-transform cursor-help -rotate-2 border-2 border-black outline-none focus:outline-none focus:ring-0"
                 onClick={() => setShowBetaMessage(!showBetaMessage)}
             >
                 BETA
