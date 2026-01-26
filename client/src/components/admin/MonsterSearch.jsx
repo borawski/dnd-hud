@@ -204,10 +204,10 @@ const MonsterSearch = () => {
             {!isCollapsed && (
                 <>
                     {/* Tabs */}
-                    <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                    <div className="flex gap-2 mb-3">
                         <button
                             onClick={() => setActiveTab('search')}
-                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'search'
+                            className={`flex-1 flex items-center justify-center px-3 py-1.5 min-h-[36px] rounded text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === 'search'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
@@ -216,7 +216,7 @@ const MonsterSearch = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('manual')}
-                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'manual'
+                            className={`flex-1 flex items-center justify-center px-3 py-1.5 min-h-[36px] rounded text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === 'manual'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}

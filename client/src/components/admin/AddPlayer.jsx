@@ -107,7 +107,7 @@ const AddPlayer = () => {
                     <div className="flex gap-2 mb-3">
                         <button
                             onClick={() => setImportMode('dndbeyond')}
-                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${importMode === 'dndbeyond'
+                            className={`flex-1 flex items-center justify-center px-3 py-1.5 min-h-[36px] rounded text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${importMode === 'dndbeyond'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
@@ -116,7 +116,7 @@ const AddPlayer = () => {
                         </button>
                         <button
                             onClick={() => setImportMode('manual')}
-                            className={`flex-1 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${importMode === 'manual'
+                            className={`flex-1 flex items-center justify-center px-3 py-1.5 min-h-[36px] rounded text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${importMode === 'manual'
                                 ? 'bg-dnd-accent text-dnd-dark'
                                 : 'bg-dnd-dark border border-dnd-muted/30 text-dnd-muted hover:text-dnd-text'
                                 }`}
