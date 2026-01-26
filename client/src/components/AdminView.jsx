@@ -27,7 +27,10 @@ const AdminView = () => {
             <Navbar backLink="/dm/dashboard" backText="Back to Dashboard" onLogout={handleLogout} />
 
             {/* Main Content */}
-            <div className="flex flex-col md:flex-row flex-1 p-4 gap-4 overflow-y-auto">
+            {/* Main Content */}
+            {/* Main Content */}
+            {/* Main Content */}
+            <div className="flex flex-col md:flex-row flex-1 p-4 gap-4 overflow-y-auto overflow-x-hidden bg-dnd-dark h-full min-h-0">
                 {/* Left Sidebar: Player Import & Bestiary */}
                 <div className="w-full md:w-1/4 md:min-w-[280px] flex flex-col gap-4">
                     <AddPlayer />

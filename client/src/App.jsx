@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
 import Landing from './components/Landing';
@@ -7,7 +7,6 @@ import DMLogin from './components/auth/DMLogin';
 import DMSignup from './components/auth/DMSignup';
 import DMDashboard from './components/campaigns/DMDashboard';
 import AdminView from './components/AdminView';
-
 import PlayerView from './components/PlayerView';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
@@ -18,7 +17,7 @@ function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
+    return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading...</div>;
   }
 
   if (!user) {
@@ -27,10 +26,6 @@ function ProtectedRoute({ children }) {
 
   return children;
 }
-
-
-
-
 
 function App() {
   return (

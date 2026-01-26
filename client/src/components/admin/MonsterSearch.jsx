@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, ChevronDown, ChevronRight, Minus } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, Minus, Check } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { API_URL } from '../../config';
 
@@ -144,6 +144,13 @@ const MonsterSearch = () => {
             };
 
             addToInitiative(newCombatant);
+
+            // Wait for visual feedback
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Clear search to close the results
+            setQuery('');
+            setResults([]);
         } finally {
             setAddingId(null);
         }
@@ -239,7 +246,7 @@ const MonsterSearch = () => {
                                 />
                             </div>
 
-                            <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
+                            <div className="flex-1 overflow-y-auto space-y-2 max-h-96 hide-scrollbar">
                                 {results.map(m => {
                                     const isThisAdding = addingId === m.index_name;
                                     const isDisabled = addingId !== null && !isThisAdding;
@@ -256,13 +263,13 @@ const MonsterSearch = () => {
                                                 onClick={() => addMonster(m)}
                                                 disabled={addingId !== null}
                                                 className={`p-1.5 rounded transition-all flex-shrink-0 ${isThisAdding
-                                                    ? 'bg-dnd-accent text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse'
+                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/50'
                                                     : isDisabled
                                                         ? 'bg-dnd-muted/10 text-dnd-muted cursor-not-allowed opacity-30 shadow-none'
                                                         : 'bg-dnd-accent/10 text-dnd-accent hover:bg-dnd-accent hover:text-white'
                                                     }`}
                                             >
-                                                <Plus size={14} />
+                                                {isThisAdding ? <Check size={14} /> : <Plus size={14} />}
                                             </button>
                                         </div>
                                     );

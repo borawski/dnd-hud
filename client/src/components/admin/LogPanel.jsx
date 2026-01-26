@@ -14,7 +14,7 @@ const LogPanel = ({ gameState }) => {
             </div>
 
             {!isCollapsed && (
-                <div className="flex-1 overflow-y-auto text-sm space-y-1 font-mono text-dnd-muted">
+                <div className="flex-1 overflow-y-auto text-sm space-y-1 font-mono text-dnd-muted hide-scrollbar">
                     {gameState.log.slice().reverse().map((entry, i) => (
                         <div key={i} className="border-b border-dnd-muted/10 pb-1">{entry}</div>
                     ))}

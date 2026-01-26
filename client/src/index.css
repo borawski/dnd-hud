@@ -55,4 +55,17 @@
   .animate-pulse-glow {
     animation: pulse-glow 0.6s ease-in-out;
   }
+
+  /* Hide scrollbars while maintaining scroll functionality */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+  }
 }
